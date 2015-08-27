@@ -12,7 +12,7 @@ output:
 
 #Introduction
 
-This is an introduction to Spatial Analysis in R. I've developed this code based on some common questions people have asked me, or that I've asked myself, over the past year. There is a lot here to help you get started, but there is also **a lot** more to learn!
+This is an introduction to Spatial Analysis in R. I've developed this code based on some common questions people have asked me, or that I've asked myself, over the past year. There is a lot here to help you get started, but there is also **a lot** more to learn! **word ** makes things bold!
 
 The focus here will be on raster analysis, rather than vector (shapefiles, polygons, polylines, points, etc.), although there's a bit of that too.  
   
@@ -22,7 +22,7 @@ I've drafted this informal introductory session in the form of answering a scien
 
 **Where are optimal sites for Red Tuna Crab (*Pleuroncodes planipes*) aquaculture within the California Current?**  
 
-![](./images/crab.png)
+![](./images/crab.png)## adds picture of crab
 
 We will answer this question by taking into consideration the following spatial data:  
 **1. Ocean Acidification**  
@@ -51,7 +51,7 @@ There are a lot of spatial packages for R, we will touch on some of them here bu
 * **maps:** Display of maps. I use this to add a map to my raster  
 * **maptools:** tools for reading and writing spatial data (visualisation)  
 * **ncdf4:** Use with NetCDF files. Note that the `raster` package is also able to read NetCDF files and I prefer to use Raster whenever possible.  
-
+the three symbolys below start a block which will have the Rcode
 ```{r libraries,message=F}
 
 library(raster)       #Main raster library with nearly all functions used in this analysis
@@ -60,7 +60,7 @@ library(rasterVis)    #Useful for raster visualizations
 library(maps)         #Has a database of maps. I use this to add a map to my raster to visualize land boundaries
 
 library(dplyr)        #NOT spatial - this is a data wrangling library
-library(RColorBrewer) #Also not spatial - used to set the spectral color scheme 
+library(RColorBrewer) #Also not spatial - used to set the spectral color scheme . typically prints in green to pink scale so online 71 she defines color scheme
 
 ```  
 
@@ -68,7 +68,7 @@ library(RColorBrewer) #Also not spatial - used to set the spectral color scheme
 
 For raster data visualization I really like to use the spectral color scheme rather than the base graphics package. I'm also setting the plotting margins much smaller so that the plots will show up larger in the viewing pane.
 ```{r settings}
-cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) # rainbow color scheme
+cols = rev(colorRampPalette(brewer.pal(11, 'Spectral'))(255)) # rainbow color scheme. plots blue to red. low to high
 
 #setting margins for plotting
 par(mar=c(2,2,1,1))
@@ -86,7 +86,7 @@ Using `readOGR` from the `rgdal` package, you can read in a shapefile.
 ```{r shapefile}
 # dsn is the path name & layer is the name of the file. NOTE: you do not need to add an extension to the layer name
 
-cc = readOGR(dsn='data',layer='ca_current')
+cc = readOGR(dsn='data',layer='ca_current') #dsn is destination of data folder
 ```
 
 **(2) Plot a Shapefile**  
@@ -100,6 +100,7 @@ And to add land to the map, do the following (from the `maps` package)
 ```{r maps}
 plot(cc)
 map('world',fill=T,add=T,col='gray')
+map('state',fill=T,add=T,col='gray')
 ```
 
 
@@ -107,7 +108,7 @@ The information in the summary of the shapefile is important if you need to unde
 
 ```{r shapefile summary}
 
-cc
+cc #this will give you a summary of the shape file
 
 ```
 
@@ -116,11 +117,11 @@ cc
 You can look at the attribute table of a shapefile by calling ...@data. The dataframe associated with the shapefile can be treated just as any other dataframe. Columns can be added, names can be changed, tables can be joined. *There are some caveats - such as filtering - that are important but I will not go into that here.*
 ```{r attribute table}
 
-cc@data
+cc@data ##treats shape file as dataframe
 
 #Add another column:
 
-cc@data$short = c('USA','MEX')
+cc@data$short = c('USA','MEX') #adds a column named short. Note. don't filter rows because you also have to remove the data from the polygon
 
 cc@data
 ```
@@ -149,7 +150,7 @@ Create a raster of the first file and plot.
 *Notice the data values are in Kelvin - we will change this to celsius later.*
 ```{r raster one sst}
 
-r = raster(sst_files[1]) #This function reads in raster files. Think of it as similar to read.csv()
+r = raster(sst_files[1]) #This function reads in raster files. Think of it as similar to read.csv(). This takes the first element of the ss_t files which is 2008
 
 plot(r,col=cols) #remember cols was defined at the beginning to plot values in the spectral color scheme
 ```
@@ -163,7 +164,7 @@ plot(cc,add=T)
 I also like to look at the distribution of data. Using the `histogram()` function from `rasterVis` is my preference over `hist()` from the base package. Purely because of the visual output.
 
 ```{r histogram sst}
-histogram(r)
+histogram(r) #from the rasterVis library
 ```
 
 
@@ -174,7 +175,7 @@ To get a single layer of average SST in degrees Celsius, first `stack` all layer
 ```{r calc avg SST}
 
 #stack is a function from the raster package that puts all RasterLayers into a RasterStack
-sstStack = stack(sst_files)
+sstStack = stack(sst_files) #add all raster layers
 
 plot(sstStack,col=cols)
 ```
@@ -183,16 +184,16 @@ You can perform operations on a RasterStack by using the `calc()` function from 
 
 Here we will take the mean value per cell, and then convert to Celsius by subtracting 273.15.
 ```{r calc sst}
-sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15}) #calculate the average SST in Kelvin then convert to Celsius
+sstAvg = calc(sstStack,fun=function(x){mean(x,na.rm=T)-273.15}) #calculate the average SST in Kelvin then convert to Celsius. calc, take the stack and call the function. whenever you take the mean of something if nas are present the answer will be Na so you have to remove them
 
 plot(sstAvg,col=cols);plot(cc,add=T)
 ```
 
 A more compact way of doing multiple raster analysis is by using pipes...you can run `stack()` and `calc()` in one call!
 ```{r pipes sst}
-
+# a pipe allows multiple functions in one call
 sstAvg = stack(sst_files)%>%
-          calc(.,fun=function(x){mean(x,na.rm=T)-273.15})
+          calc(.,fun=function(x){mean(x,na.rm=T)-273.15},filename='sst.tif') ##the dot specifies that you the data is the previous file but it is not necessary. you could also name a new file there.. this is better cause it gets rid of the sst stack file so its more efficient. you can use tidyr and such instead of using loops.
 
 plot(sstAvg,col=cols);plot(cc,add=T)
 ```
@@ -207,7 +208,7 @@ Read in this data the same way as the SST data, using `raster()`. This data is t
 
 oaAvg = raster('data/oa_avg.tif');oaAvg
 
-plot(oaAvg,col=cols)
+plot(oaAvg,col=cols) ## this layer has a different projection
 
 ```
 
@@ -235,7 +236,7 @@ Here, we want to project from *Mollweide* to *longlat*
 
 ```{r reproject,warning=FALSE}
 
-oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#see a warning about finite points
+oa_proj = projectRaster(oaAvg,crs = ('+proj=longlat'))#see a warning about finite points. you can also use espg(?) numbers
 plot(oa_proj,col=cols)
 ```
 
@@ -275,7 +276,7 @@ Again we can condense this script by using pipes!
 
 oa = projectRaster(oaAvg,crs=('+proj=longlat'))%>%
         crop(.,sstAvg)%>%
-          resample(.,sstAvg,method='ngb')#,progress='text')
+          resample(.,sstAvg,method='ngb')#,progress='text')#check error message
 
 plot(oa,col=cols)
 ```
@@ -301,12 +302,12 @@ I prefer to do a simple subset using brackets, but first assigning a new variabl
 ```{r}
 plot(sstAvg,col=cols);plot(cc,add=T)
 # trying something like this gives you all of the cell values that fit your condition. Not exactly what we want
-#sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
+sstPref=sstAvg[sstAvg>=12 & sstAvg<=18]
 
 #I prefer the following
 
 sstPref = sstAvg
-sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA
+sstPref[sstPref<12 | sstPref>18]<-NA #set all cells outside of our range to NA. if you subset it gives you the data not the raster later
 plot(sstPref,col=cols);plot(cc,add=T)
 ```
 
@@ -317,8 +318,8 @@ Our species also prefers water that has an aragonite saturation state **between 
 ```{r}
 plot(oa,col=cols)
 oaPref = oa
-oaPref[oaPref<2.4|oaPref>3]<-NA
-plot(oaPref,col=cols); plot(cc,add=T)
+oaPref[oaPref<2.4|oaPref>3]<-NA # bar is or
+plot(oaPref,col=cols); plot(cc,add=T);plot(sstPref,add=T,col=cols)
 ```
 
 **(3) Change all remaining cell values to 1**
@@ -347,7 +348,7 @@ Now that we have these two binary layers, we can combine them by summing all cel
 Multiply the two rasters together using `overlay()` from the raster package and the resulting cells, equal to 1, are the cells that meet both SST and OA requirements
 ```{r}
 
-cells = overlay(sstBin,oaBin,fun=function(x,y){x*y})
+cells = overlay(sstBin,oaBin,fun=function(x,y){x*y}) ## overlay 2 different raster layers
 plot(cells);plot(cc,add=T)
 
 ```
@@ -418,7 +419,7 @@ mpa = readOGR(dsn='data',layer='MPA_State',verbose=F);mpa
 plot(mpa)
 
 # try to crop to our extent
-mpa_c = crop(mpa,ext);mpa_c
+mpa_c = crop(mpa,ext);mpa_c## error bc not in the right projection
 ```
 
 Notice that when creaing `mpa_c` there is no error. But when you call it the output is NULL, indicating a NULL object. This is because the MPA shapefile is **not in the same projection**  
@@ -427,11 +428,11 @@ Using `spTransform()` from the `rgdal` package, you can project a shapefile in a
 
 ```{r}
 
-mpa = spTransform(mpa,CRS("+proj=longlat")) #spTransform is part of rgdal package
+mpa = spTransform(mpa,CRS("+proj=longlat")) #spTransform is part of rgdal package. This is how you reproject a shape package.
 
 #crop again
 mpa_c = crop(mpa,ext);plot(mpa_c);plot(cc,add=T)
-
+projection(mpa_c)
 ```
 
 The same can be done with the National Marine Sanctuary shapefile, using pipes!
@@ -449,7 +450,7 @@ plot(nms);plot(cc,add=T)
 To remove cells in the MPAs and NMS just use the `mask()` function but set `inverse=T` so that all cells **outside** of the polygons are kept and those inside are set to NA.
 
 ```{r mask inverse}
-
+##inverse=TRUE gets the inverse of this.
 cellsAQ = mask(cropCells,mpa_c,inverse=T)%>%
             mask(.,nms,inverse=T)
 
@@ -471,16 +472,17 @@ First you want to turn a shapefile (california current) into a raster of the sam
 #let's take a look at what the CC dataframe looks like again
 head(cc)
 
-ccZones = rasterize(cc,cellsAQ)#,progress='text')
+ccZones = rasterize(cc,cellsAQ)#progress='text') #turns shape into raster with same attributes of cells Aq file
 ccZones
 plot(ccZones)
-
+#zonal gives you total area of cells
 ```  
 R automatically assigned 1 and 2 as the cell values. You can set your own values too based on a field or another defined vector of ids.  
 
 ```{r rasterize by field}
 
 #using a field from the shapefile
+#tells it what values to use when rasterized
 
 cc_ras_ID = rasterize(cc,cellsAQ,field="ID");cc_ras_ID
 plot(cc_ras_ID)
@@ -496,7 +498,7 @@ Since the current values of `prefRas` are all equal to 1, we can simply sum up t
 ```{r zonal}
 
 plot(cellsAQ)
-cellsSum = zonal(cellsAQ,ccZones,fun='sum') #total number of cells since they are all equal to 1
+cellsSum = zonal(cellsAQ,ccZones,fun='sum') #total number of cells since they are all equal to 1. output is matrix
 cellsSum
 ```
 
